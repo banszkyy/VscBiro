@@ -1,14 +1,26 @@
 # Bíró 3 bővítmény Visual Studio Code-hoz
 
+## Bejelentkezés
+
+A bal oldali sávon nyisd meg a feladat-böngészőt (az ikonja ugyan az, mint a Bíró 3-nak).
+
+Ott lesz egy "Login" gomb, arra nyomj rá.
+
+Meg fog jelenni beviteli mező a h-s azonosítódhoz és jelszavadhoz.
+
+Ha nem jelenik meg a "Login" gomb, futtasd a `vscbiro3.login` parancsot:
+
+1. Nyomd meg az F1 billentyűt, vagy kattints a felső "Command Center" részre.
+2. Írd be hogy "Bejelentkezés", "Login", vagy "vscbiro3.login"
+3. Futtasd a parancsot
+
 ## Feladat kiválasztása
 
-A bal oldali sávon van a feladat böngésző.
-Ott keresd meg és válaszd ki a megfelelő feladatot.
+A feladat-böngészőben keresd meg és válaszd ki a megfelelő feladatot.
 
 Miután kiválasztottad, meg fog jelenni a feladatleírás.
 
-> [!TIP]
-> Az alsó sávon is ki van írva a kiválasztott feladat neve
+> 💡 Az alsó sávon is ki van írva a kiválasztott feladat neve
 
 ## Feladat feltöltése
 

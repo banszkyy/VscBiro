@@ -20,11 +20,12 @@ export function activate(context: vscode.ExtensionContext) {
     exerciseStatusItem.hide()
 
     const coursesViewProvider = new BiroExplorerProvider(client, context.extensionUri)
-    vscode.window.createTreeView('biro-courses', {
+    const coursesView = vscode.window.createTreeView('biro-courses', {
         treeDataProvider: coursesViewProvider,
         canSelectMany: false,
         showCollapseAll: true,
     })
+    coursesViewProvider.view = coursesView
 
 
     const onExerciseViewDispose = () => {
@@ -157,7 +158,7 @@ export function activate(context: vscode.ExtensionContext) {
     }))
 
     context.subscriptions.push(vscode.commands.registerCommand('vscbiro3.courses.refresh', async () => {
-        client.refresh()
+        client.clear()
         coursesViewProvider.refresh()
     }))
 
@@ -165,6 +166,17 @@ export function activate(context: vscode.ExtensionContext) {
         if (!exercisePanel) return
         await exercisePanel.update(true)
     }))
+
+    context.subscriptions.push(vscode.commands.registerCommand('vscbiro3.login', async () => {
+        await client.login()
+        client.clear()
+        coursesViewProvider.refresh()
+    }))
+
+    context.subscriptions.push(vscode.commands.registerCommand('vscbiro3.logout', async () => {
+        client.logout()
+    }))
+
 }
 
 export function deactivate() {

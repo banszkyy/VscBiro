@@ -3,7 +3,7 @@
   "displayName": "SZTE Bíró 3",
   "icon": "assets/icon.png",
   "description": "",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.107.0"
   },
@@ -33,25 +33,40 @@
       {
         "command": "vscbiro3.courses.refresh",
         "title": "%vscbiro3.commands.courses.refresh.title%",
-        "icon": "$(refresh)"
+        "icon": "$(refresh)",
+        "category": "Bíró 3"
       },
       {
         "command": "vscbiro3.exercise.refresh",
         "title": "%vscbiro3.commands.exercise.refresh.title%",
-        "icon": "$(refresh)"
+        "icon": "$(refresh)",
+        "category": "Bíró 3"
       },
       {
         "command": "vscbiro3.selectExercise",
-        "title": "%vscbiro3.commands.selectExercise.title%"
+        "title": "%vscbiro3.commands.selectExercise.title%",
+        "category": "Bíró 3"
       },
       {
         "command": "vscbiro3.openSubmittedFile",
-        "title": "%vscbiro3.commands.openSubmittedFile.title%"
+        "title": "%vscbiro3.commands.openSubmittedFile.title%",
+        "category": "Bíró 3"
       },
       {
         "command": "vscbiro3.submit",
         "title": "%vscbiro3.commands.submit.title%",
-        "icon": "$(cloud-upload)"
+        "icon": "$(cloud-upload)",
+        "category": "Bíró 3"
+      },
+      {
+        "command": "vscbiro3.login",
+        "title": "%vscbiro3.commands.login.title%",
+        "category": "Bíró 3"
+      },
+      {
+        "command": "vscbiro3.logout",
+        "title": "%vscbiro3.commands.logout.title%",
+        "category": "Bíró 3"
       }
     ],
     "viewsContainers": {
@@ -73,6 +88,12 @@
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "biro-courses",
+        "contents": "Login to view your courses\n[Login](command:vscbiro3.login)"
+      }
+    ],
     "menus": {
       "view/title": [
         {

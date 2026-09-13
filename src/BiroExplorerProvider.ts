@@ -7,10 +7,12 @@ import { Assignment } from './api/models'
 export class BiroExplorerProvider implements vscode.TreeDataProvider<string> {
     readonly client: Biro3Client
     readonly extensionRoot: vscode.Uri
+    view: vscode.TreeView<string>
 
     constructor(client: Biro3Client, extensionRoot: vscode.Uri) {
         this.client = client
         this.extensionRoot = extensionRoot
+        this.view = <vscode.TreeView<string>><any>null
     }
 
     private _onDidChangeTreeData = new vscode.EventEmitter<string | undefined>();
@@ -95,8 +97,20 @@ export class BiroExplorerProvider implements vscode.TreeDataProvider<string> {
     }
 
     async getChildren(element?: string): Promise<string[]> {
+        this.view.description = undefined
+
+        if (!this.client.wasAuthenticated()) {
+            return []
+        }
+
         if (!element) {
             const subjectInstances = await this.client.withReauth(() => this.client.getSubjectInstances())
+
+            if (subjectInstances.length === 0) {
+                this.view.description = vscode.l10n.t(`You have no courses`)
+                return []
+            }
+
             const k = (v: string) => Number.parseInt(v.split('/')[1]) + (Number.parseInt(v.split('/')[2]) - 1) / 2
             return [...subjectInstances]
                 .sort((a, b) => k(b.semesterName) - k(a.semesterName))

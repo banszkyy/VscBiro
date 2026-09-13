@@ -58,6 +58,10 @@ export class Biro3Client {
 
     //#region Utilities
 
+    wasAuthenticated(): boolean {
+        return !!this.username && !!this.password && !!this.accessToken
+    }
+
     async withReauth<TResult>(fetch: () => Promise<TResult>): Promise<TResult> {
         if (!this.username || !this.password) {
             log.warn(`No username/password, asking the user ...`)
@@ -216,16 +220,24 @@ export class Biro3Client {
 
     async login() {
         do {
-            const usernameInput: string = await vscode.window.showInputBox({
+            const usernameInput = await vscode.window.showInputBox({
                 password: false,
-                title: 'Username',
+                title: vscode.l10n.t('Bíró Login'),
+                placeHolder: vscode.l10n.t('h Identifier'),
+                prompt: vscode.l10n.t('h Identifier'),
                 ignoreFocusOut: true,
-            }) ?? ''
-            const passwordInput: string = await vscode.window.showInputBox({
+            })
+            const passwordInput = await vscode.window.showInputBox({
                 password: true,
-                title: 'Password',
+                title: vscode.l10n.t('Bíró Login'),
+                prompt: vscode.l10n.t('Password'),
+                placeHolder: vscode.l10n.t('Password'),
                 ignoreFocusOut: true,
-            }) ?? ''
+            })
+
+            if (usernameInput === undefined || passwordInput === undefined) {
+                throw new Error('Login canceled')
+            }
 
             try {
                 return await this.fetchAccessToken(usernameInput, passwordInput)
@@ -240,6 +252,14 @@ export class Biro3Client {
                 throw error
             }
         } while (true)
+    }
+
+    logout() {
+        this.username = null
+        this.password = null
+        this.refreshToken = null
+        this.accessToken = null
+        this.clear()
     }
 
     async fetchAccessToken(username: string, password: string): Promise<void> {
@@ -271,7 +291,7 @@ export class Biro3Client {
 
     //#endregion
 
-    public refresh() {
+    public clear() {
         this.subjectInstances = null
         this.assignments = {}
         this.assignmentDetails = {}

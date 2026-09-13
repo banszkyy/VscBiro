@@ -5,5 +5,7 @@
     "vscbiro3.commands.openSubmittedFile.title": "Feltöltött fájl megtekintése",
     "vscbiro3.commands.submit.title": "Fájl feltöltése",
     "vscbiro3.views.biro-menu.name": "Kurzusok",
-    "vscbiro3.views.biro-menu.contextualTitle": "Bíró Kurzusok"
+    "vscbiro3.views.biro-menu.contextualTitle": "Bíró Kurzusok",
+    "vscbiro3.commands.login.title": "Bejelentkezés",
+    "vscbiro3.commands.logout.title": "Kijelentkezés"
 }
