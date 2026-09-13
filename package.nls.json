@@ -1,0 +1,9 @@
+{
+    "vscbiro3.commands.courses.refresh.title": "Refresh",
+    "vscbiro3.commands.exercise.refresh.title": "Refresh",
+    "vscbiro3.commands.selectExercise.title": "Select exercise",
+    "vscbiro3.commands.openSubmittedFile.title": "Open submitted file",
+    "vscbiro3.commands.submit.title": "Submit file",
+    "vscbiro3.views.biro-menu.name": "Courses",
+    "vscbiro3.views.biro-menu.contextualTitle": "Bíró Courses"
+}

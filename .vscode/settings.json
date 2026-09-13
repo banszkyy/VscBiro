@@ -1,0 +1,11 @@
+{
+	"files.exclude": {
+		".temp": true,
+	},
+	"search.exclude": {
+		"out": true
+	},
+	"typescript.tsc.autoDetect": "off",
+	"typescript.referencesCodeLens.enabled": true,
+	"typescript.format.semicolons": "remove"
+}

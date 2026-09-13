@@ -1,0 +1,26 @@
+{
+	"compilerOptions": {
+		"module": "Node16",
+		"target": "ES2022",
+		"outDir": "out",
+		"lib": [
+			"ES2022"
+		],
+		"sourceMap": true,
+		"rootDir": "src",
+		"strict": true,
+		"noImplicitReturns": true, 
+		"noFallthroughCasesInSwitch": true,
+		"noUnusedParameters": false,
+		"noImplicitAny": true,
+		"noImplicitOverride": true,
+		"noImplicitThis": true,
+		"noPropertyAccessFromIndexSignature": true,
+		"noUnusedLocals": true,
+		"strictFunctionTypes": true,
+		"strictNullChecks": true,
+		"strictPropertyInitialization": true,
+		"strictBindCallApply": true,
+		"strictBuiltinIteratorReturn": true,
+	}
+}

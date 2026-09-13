@@ -1,0 +1,123 @@
+{
+  "name": "vscbiro3",
+  "displayName": "Bíró 3",
+  "icon": "assets/icon.png",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.107.0"
+  },
+  "publisher": "banszky",
+  "categories": [
+    "Other"
+  ],
+  "repository": {
+    "url": "https://github.com/banszkyy/VscBiro"
+  },
+  "bugs": {
+    "url": "https://github.com/banszkyy/VscBiro/issues"
+  },
+  "homepage": "https://github.com/banszkyy/VscBiro",
+  "preview": true,
+  "author": {
+    "name": "Bánszky",
+    "url": "https://github.com/banszkyy"
+  },
+  "activationEvents": [
+    "onWebviewPanel:exercise"
+  ],
+  "l10n": "./l10n",
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vscbiro3.courses.refresh",
+        "title": "%vscbiro3.commands.courses.refresh.title%",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "vscbiro3.exercise.refresh",
+        "title": "%vscbiro3.commands.exercise.refresh.title%",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "vscbiro3.selectExercise",
+        "title": "%vscbiro3.commands.selectExercise.title%"
+      },
+      {
+        "command": "vscbiro3.openSubmittedFile",
+        "title": "%vscbiro3.commands.openSubmittedFile.title%"
+      },
+      {
+        "command": "vscbiro3.submit",
+        "title": "%vscbiro3.commands.submit.title%",
+        "icon": "$(cloud-upload)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "biro-menu",
+          "title": "Bíró 3",
+          "icon": "assets/icon_student2.svg"
+        }
+      ]
+    },
+    "views": {
+      "biro-menu": [
+        {
+          "id": "biro-courses",
+          "icon": "assets/class.svg",
+          "name": "%vscbiro3.views.biro-menu.name%",
+          "contextualTitle": "%vscbiro3.views.biro-menu.contextualTitle%"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "vscbiro3.courses.refresh",
+          "when": "view == 'biro-courses'",
+          "group": "navigation"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "vscbiro3.submit",
+          "when": "vscbiro3.allowSubmission && resourceScheme != 'webview-panel'",
+          "group": "navigation"
+        },
+        {
+          "command": "vscbiro3.exercise.refresh",
+          "when": "activeWebviewPanelId == 'exercise'",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "clean": "rm -r ./out/*",
+    "compile": "tsc --project ./",
+    "package": "vsce package --out vscbiro3.vsix",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src",
+    "l10n-export": "npx @vscode/l10n-dev export --outDir ./l10n ./src"
+  },
+  "devDependencies": {
+    "@types/marked": "^5.0.2",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.107.0",
+    "@vscode/l10n-dev": "^0.0.35",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.9.2",
+    "eslint": "^9.39.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.48.1"
+  },
+  "dependencies": {
+    "marked": "^17.0.1"
+  }
+}

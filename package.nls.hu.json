@@ -1,0 +1,9 @@
+{
+    "vscbiro3.commands.courses.refresh.title": "Frissítés",
+    "vscbiro3.commands.exercise.refresh.title": "Frissítés",
+    "vscbiro3.commands.selectExercise.title": "Feladat megnyitása",
+    "vscbiro3.commands.openSubmittedFile.title": "Feltöltött fájl megtekintése",
+    "vscbiro3.commands.submit.title": "Fájl feltöltése",
+    "vscbiro3.views.biro-menu.name": "Kurzusok",
+    "vscbiro3.views.biro-menu.contextualTitle": "Bíró Kurzusok"
+}
