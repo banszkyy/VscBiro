@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import { Exercise, Assignment } from './api/models'
 import { Biro3Client } from './api/Biro3Client'
 import { log } from './extension'
-import { rateLimiter } from './utils'
+import { rateLimiter, getNonce, handleError } from './utils'
 // @ts-ignore
 const marked: typeof import('marked') = require('marked')
 
@@ -171,6 +171,7 @@ export default class ExercisePanel {
                 if (submission.status === "UNDER_EVALUATION") {
                     shouldRefreshLater = true
                 }
+
                 tasks.push(this.client.withReauth(() => this.client.getSubmissionFiles(submission.submissionId)))
                 for (const evaluation of submission.evaluations) {
                     tasks.push(this.client.withReauth(() => this.client.getReports(evaluation.evaluationId)))
@@ -192,13 +193,6 @@ export default class ExercisePanel {
                                 return
                             }
 
-                            for (const submission of exercise.submissions) {
-                                if (!(await this.client.smartGetSubmissionStatus(submission.submissionId)).finished) {
-                                    for (const evaluation of submission.evaluations) {
-                                        delete this.client.reports[evaluation.evaluationId]
-                                    }
-                                }
-                            }
                             log.debug(`Exercise webview is automatically refreshing`)
                             this.update(false)
                         }, 1000)
@@ -211,7 +205,7 @@ export default class ExercisePanel {
             }
 
             if (this.exerciseId !== exercise.assignedExerciseId) {
-                log.warn(`Exercise id changed, skipping updating webview HTML (1)`)
+                log.trace(`Exercise id changed, skipping updating webview HTML (1)`)
                 return
             }
 
@@ -219,6 +213,7 @@ export default class ExercisePanel {
             this.refreshHtmlLimited(exercise)
         } catch (error) {
             log.error(String(error))
+            handleError(error)
         } finally {
             unlock()
         }
@@ -226,7 +221,7 @@ export default class ExercisePanel {
 
     private refreshHtml(exercise: Exercise) {
         if (this.exerciseId !== exercise.assignedExerciseId) {
-            log.warn(`Exercise id changed, skipping updating webview HTML (2)`)
+            log.trace(`Exercise id changed, skipping updating webview HTML (2)`)
             return
         }
 
@@ -365,13 +360,4 @@ function getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewPanelOptions
         localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'assets')],
         enableScripts: true,
     }
-}
-
-function getNonce() {
-    let text = ''
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-    for (let i = 0; i < 32; i++) {
-        text += possible.charAt(Math.floor(Math.random() * possible.length))
-    }
-    return text
 }

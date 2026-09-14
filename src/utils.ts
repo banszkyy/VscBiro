@@ -1,5 +1,8 @@
+import { ApiError } from './api/ApiError'
 import { Assignment } from './api/models'
 import * as vscode from 'vscode'
+import { sentry } from './extension'
+import { OkayError } from './api/OkayError'
 
 export async function fetchUpWithProgress(input: string | URL | Request, init: RequestInit, progress: (current: number, total: number) => void) {
     const encoder = new TextEncoder()
@@ -53,7 +56,7 @@ export function getQuery(uri: vscode.Uri) {
     return res
 }
 
-function sleep(delay: number): Promise<void> {
+export function sleep(delay: number): Promise<void> {
     return new Promise(v => setTimeout(v, delay))
 }
 
@@ -66,3 +69,26 @@ export function rateLimiter<TArgs extends any[], TReturn>(f: (...args: TArgs) =>
         return f(...args)
     })
 }
+
+export function getNonce() {
+    let text = ''
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    for (let i = 0; i < 32; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length))
+    }
+    return text
+}
+
+export function handleError(error: unknown) {
+    if (error instanceof OkayError) return
+    if (error instanceof ApiError) return
+
+    vscode.window.showErrorMessage(vscode.l10n.t('An error occurred! Please report it so I can fix it.'), vscode.l10n.t('Report'))
+        .then(res => {
+            if (res === vscode.l10n.t('Report')) {
+                sentry.captureException(error)
+                vscode.window.showInformationMessage(vscode.l10n.t('Thanks'))
+            }
+        })
+}
+

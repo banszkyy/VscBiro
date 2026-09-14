@@ -17,22 +17,33 @@
     margin-bottom: 4px;
 }
 
-.example {
+.example-input,
+.example-output {
     border: 1px dotted #497F3F;
     padding: 5px;
     margin: 16px 0;
     color: #50bd3c;
     font-style: italic;
     line-height: 2;
+    font-family: "Droid Sans Mono", monospace;
 }
 
-.example::before {
-    content: "PÉLDA";
+.example-input::before,
+.example-output::before {
     color: #50bd3c;
     font-weight: 600;
     display: block;
     -webkit-user-select: auto;
     user-select: auto;
+    font-family: system-ui, Ubuntu, Droid Sans, sans-serif;
+}
+
+.example-input::before {
+    content: "EXAMPLE INPUT";
+}
+
+.example-output::before {
+    content: "EXAMPLE OUTPUT";
 }
 
 img.story {
@@ -166,4 +177,25 @@ h2 {
 .button.disabled:active {
     opacity: .4 !important;
     cursor: default;
+}
+
+.feedback-form {
+    border: 1px solid var(--vscode-input-border);
+    padding: 10px;
+    margin: 50px auto;
+    max-width: calc(100vw - 80px);
+    display: block;
+}
+
+.form-element {
+    margin: 12px;
+}
+
+.required-indicator {
+    color: var(--vscode-testing-iconErrored);
+    font-weight: bold;
+}
+
+#feedback-message {
+    resize: vertical;
 }

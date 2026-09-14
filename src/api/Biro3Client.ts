@@ -4,6 +4,8 @@ import * as vscode from 'vscode'
 import { ApiError } from './ApiError'
 import { Assignment, Exercise, ExerciseStatus, ReportContent, StarterFile, SubjectInstance, SubmissionStatus } from './models'
 import { log } from '../extension'
+import { OkayError } from './OkayError'
+import { sleep } from '../utils'
 
 function parseCookies(response: Response): Readonly<Record<string, string>> {
     const cookies: Record<string, string> = {}
@@ -38,6 +40,8 @@ export class Biro3Client {
     submissionFiles: Record<number, ReadonlyArray<{ filename: string; content: string }>>
     taskImages: Record<`${number}-${number}`, string>
     starterFiles: Record<`${number}-${number}`, StarterFile>
+    private readonly submissionWaiters: Record<number, Promise<SubmissionStatus>>
+    private readonly submissionWaiterCallbacks: Record<number, Array<(status: SubmissionStatus) => void | Promise<void>>>
 
     constructor() {
         this.username = null
@@ -54,6 +58,8 @@ export class Biro3Client {
         this.submissionFiles = {}
         this.taskImages = {}
         this.starterFiles = {}
+        this.submissionWaiters = {}
+        this.submissionWaiterCallbacks = {}
     }
 
     //#region Utilities
@@ -223,10 +229,15 @@ export class Biro3Client {
             const usernameInput = await vscode.window.showInputBox({
                 password: false,
                 title: vscode.l10n.t('Bíró Login'),
-                placeHolder: vscode.l10n.t('h Identifier'),
+                placeHolder: 'hxxxxxx',
                 prompt: vscode.l10n.t('h Identifier'),
                 ignoreFocusOut: true,
             })
+
+            if (usernameInput === undefined) {
+                throw new OkayError('Login canceled')
+            }
+
             const passwordInput = await vscode.window.showInputBox({
                 password: true,
                 title: vscode.l10n.t('Bíró Login'),
@@ -235,8 +246,8 @@ export class Biro3Client {
                 ignoreFocusOut: true,
             })
 
-            if (usernameInput === undefined || passwordInput === undefined) {
-                throw new Error('Login canceled')
+            if (passwordInput === undefined) {
+                throw new OkayError('Login canceled')
             }
 
             try {
@@ -460,5 +471,40 @@ export class Biro3Client {
         }
         this.submissionFiles[submissionId] = v
         return v
+    }
+
+    invalidateExercise(exerciseId: number) {
+        delete this.exercises[exerciseId]
+        const assignment = Object.values(this.assignmentDetails).find(v => v.exerciseStatuses.find(w => w.assignedExerciseId === exerciseId))
+        if (assignment) {
+            delete this.assignments[assignment.assignmentDetails.assignmentAssignedStudentId]
+            delete this.assignmentDetails[assignment.assignmentDetails.assignmentAssignedStudentId]
+        }
+    }
+
+    waitForSubmission(submissionId: number, update?: (status: SubmissionStatus) => void | Promise<void>) {
+        if (update) (this.submissionWaiterCallbacks[submissionId] ??= []).push(update)
+        return this.submissionWaiters[submissionId] ?? this._waitForSubmission(submissionId)
+    }
+
+    async _waitForSubmission(submissionId: number) {
+        try {
+            while (true) {
+                const status = await this.withReauth(() => this.smartGetSubmissionStatus(submissionId))
+                const t = []
+                for (const callback of this.submissionWaiterCallbacks[submissionId] ?? []) {
+                    const v = callback(status)
+                    if (v) t.push(v)
+                }
+                await Promise.allSettled(t)
+
+                if (status.finished) return status
+
+                await sleep(1000)
+            }
+        } finally {
+            delete this.submissionWaiterCallbacks[submissionId]
+            delete this.submissionWaiters[submissionId]
+        }
     }
 }

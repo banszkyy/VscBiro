@@ -3,7 +3,7 @@
   "displayName": "SZTE Bíró 3",
   "icon": "assets/icon.png",
   "description": "",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "engines": {
     "vscode": "^1.107.0"
   },
@@ -24,7 +24,8 @@
     "url": "https://github.com/banszkyy"
   },
   "activationEvents": [
-    "onWebviewPanel:exercise"
+    "onWebviewPanel:exercise",
+    "onWebviewPanel:feedback"
   ],
   "l10n": "./l10n",
   "main": "./out/extension.js",
@@ -67,6 +68,11 @@
         "command": "vscbiro3.logout",
         "title": "%vscbiro3.commands.logout.title%",
         "category": "Bíró 3"
+      },
+      {
+        "command": "vscbiro3.feedback",
+        "title": "%vscbiro3.commands.feedback.title%",
+        "category": "Bíró 3"
       }
     ],
     "viewsContainers": {
@@ -83,8 +89,8 @@
         {
           "id": "biro-courses",
           "icon": "assets/class.svg",
-          "name": "%vscbiro3.views.biro-menu.name%",
-          "contextualTitle": "%vscbiro3.views.biro-menu.contextualTitle%"
+          "name": "%vscbiro3.views.biro-courses.name%",
+          "contextualTitle": "%vscbiro3.views.biro-courses.contextualTitle%"
         }
       ]
     },
@@ -139,6 +145,7 @@
     "typescript-eslint": "^8.48.1"
   },
   "dependencies": {
+    "@sentry/node": "^10.74.0",
     "marked": "^17.0.1"
   }
 }

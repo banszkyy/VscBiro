@@ -4,8 +4,9 @@
     "vscbiro3.commands.selectExercise.title": "Select exercise",
     "vscbiro3.commands.openSubmittedFile.title": "Open submitted file",
     "vscbiro3.commands.submit.title": "Submit file",
-    "vscbiro3.views.biro-menu.name": "Courses",
-    "vscbiro3.views.biro-menu.contextualTitle": "Bíró Courses",
+    "vscbiro3.views.biro-courses.name": "Courses",
+    "vscbiro3.views.biro-courses.contextualTitle": "Bíró Courses",
     "vscbiro3.commands.login.title": "Login",
-    "vscbiro3.commands.logout.title": "Logout"
+    "vscbiro3.commands.logout.title": "Logout",
+    "vscbiro3.commands.feedback.title": "Feedback"
 }

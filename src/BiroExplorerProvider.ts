@@ -71,7 +71,7 @@ export class BiroExplorerProvider implements vscode.TreeDataProvider<string> {
 
             const exercise = this.client.assignmentDetails[assignmentAssignedStudentId]?.exerciseStatuses.find(v => v.assignedExerciseId === exerciseId)
             if (exercise) {
-                const item = new vscode.TreeItem(`${exercise.exerciseIndex}. feladat`, vscode.TreeItemCollapsibleState.None)
+                const item = new vscode.TreeItem(`${exercise.exerciseIndex}. feladat`, (this.client.exercises[exerciseId]?.starterFiles ?? [null]).length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None)
                 item.id = element
                 if (exercise.exerciseState === "COMPLETED") {
                     item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'in-progress.svg')
@@ -81,6 +81,8 @@ export class BiroExplorerProvider implements vscode.TreeDataProvider<string> {
                     item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'error.svg')
                 } else if (exercise.exerciseState === "NO_SUBMISSION") {
                     item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'no-submission.svg')
+                } else if (exercise.exerciseState === "UNDER_EVALUATION") {
+                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'in-progress.svg')
                 } else {
                     log.error(`Exercise status "${exercise.exerciseState}" not implemented`)
                 }
@@ -91,6 +93,22 @@ export class BiroExplorerProvider implements vscode.TreeDataProvider<string> {
                 }
                 return item
             }
+        }
+
+        if (parts.length === 4) {
+            const exerciseId = Number.parseInt(parts[2])
+            const starterFilename = parts[3].split('#')[0]
+            const starterFileId = Number.parseInt(parts[3].split('#')[1])
+
+            const item = new vscode.TreeItem(starterFilename, vscode.TreeItemCollapsibleState.None)
+            item.id = element
+            item.resourceUri = vscode.Uri.parse(`birostarterfile:${starterFilename}?exerciseId=${exerciseId}&fileId=${starterFileId}`)
+            item.command = {
+                command: "vscbiro3.openStarterFile",
+                arguments: [exerciseId, starterFilename, starterFileId],
+                title: "Open File",
+            }
+            return item
         }
 
         return new vscode.TreeItem(element, vscode.TreeItemCollapsibleState.Collapsed)
@@ -160,6 +178,15 @@ export class BiroExplorerProvider implements vscode.TreeDataProvider<string> {
             const { exerciseStatuses } = await this.client.withReauth(() => this.client.getAssignment(assignmentAssignedStudentId))
             return exerciseStatuses
                 .map(v => `${subjectInstanceId}-${assignmentAssignedStudentId}-${v.assignedExerciseId}`)
+        }
+
+        if (parts.length === 3) {
+            const subjectInstanceId = Number.parseInt(parts[0])
+            const assignmentAssignedStudentId = Number.parseInt(parts[1])
+            const assignedExerciseId = Number.parseInt(parts[2])
+
+            const exercise = await this.client.withReauth(() => this.client.getExercise(assignedExerciseId))
+            return exercise.starterFiles.map(v => `${subjectInstanceId}-${assignmentAssignedStudentId}-${assignedExerciseId}-${v.filename}#${v.starterFileId}`)
         }
 
         return []
