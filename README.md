@@ -28,6 +28,6 @@ Ha megnyitsz egy fájlt, a jobb felső sarokban van egy Feltöltés gomb. Arra r
 
 A feladat leírás vége fele van egy fájl feltöltés gomb. Arra rányomva kiválaszthatod a fájlt amit fel akarsz tölteni.
 
-## Nem működik!
+## Valami nem működik?
 
 Írj nekem Discordon, nyiss egy GitHub issue-t, írj e-mailt, keress meg Coospacen. Amíg nem javítom a hibát, használd a Bíró weboldalát.

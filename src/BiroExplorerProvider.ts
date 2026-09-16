@@ -48,19 +48,36 @@ export class BiroExplorerProvider implements vscode.TreeDataProvider<string> {
                 const item = new vscode.TreeItem(assignment.assignmentName, vscode.TreeItemCollapsibleState.Collapsed)
                 item.description = assignment.assignmentDescription
                 item.id = element
+                let suffix = ''
+
+                if (assignment.score === null) {
+                    suffix = ''
+                } else if (assignment.score >= assignment.maxScore) {
+                    suffix = '-pass'
+                } else if (assignment.score > assignment.minScore) {
+                    suffix = '-progress'
+                } else {
+                    suffix = '-error'
+                }
+
                 if (isAssignmentLocked(assignment) && assignment.postDeadlineHandling === "LOCKED") {
                     item.collapsibleState = vscode.TreeItemCollapsibleState.None
                     item.tooltip = vscode.l10n.t('This assignment is locked')
                     item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'lock.svg')
-                } else if (assignment.score === null) {
-                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'no-submission.svg')
-                } else if (assignment.score >= assignment.maxScore) {
-                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'pass.svg')
-                } else if (assignment.score > assignment.minScore) {
-                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'in-progress.svg')
                 } else {
-                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'error.svg')
+                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'assignment-icons', `${({
+                        "PRACTICE_ASSIGNMENT": 'exercise',
+                        "IN_CLASS_ASSIGNMENT": 'inclass',
+                        "OTHER": 'unknown',
+                        "REMEDIAL_ASSIGNMENT": 'retake',
+                        "EXAM": 'assignment',
+                        "MOCK_EXAM": 'mockexam',
+                        "HOMEWORK": 'homework',
+                        "OPTIONAL_ASSIGNMENT": 'optional',
+                        "SANDBOX_TRIAL_ASSIGNMENT": 'sandbox-test',
+                    })[assignment.assignmentType]}${suffix}.svg`)
                 }
+
                 return item
             }
         }
@@ -74,15 +91,15 @@ export class BiroExplorerProvider implements vscode.TreeDataProvider<string> {
                 const item = new vscode.TreeItem(`${exercise.exerciseIndex}. feladat`, (this.client.exercises[exerciseId]?.starterFiles ?? [null]).length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None)
                 item.id = element
                 if (exercise.exerciseState === "COMPLETED") {
-                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'in-progress.svg')
+                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'exercise-icons', 'in-progress.svg')
                 } else if (exercise.exerciseState === "MAX") {
-                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'pass.svg')
+                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'exercise-icons', 'pass.svg')
                 } else if (exercise.exerciseState === "COMPLETED_ZERO") {
-                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'error.svg')
+                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'exercise-icons', 'error.svg')
                 } else if (exercise.exerciseState === "NO_SUBMISSION") {
-                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'no-submission.svg')
+                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'exercise-icons', 'no-submission.svg')
                 } else if (exercise.exerciseState === "UNDER_EVALUATION") {
-                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'in-progress.svg')
+                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'exercise-icons', 'in-progress.svg')
                 } else {
                     log.error(`Exercise status "${exercise.exerciseState}" not implemented`)
                 }

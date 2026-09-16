@@ -1,4 +1,14 @@
+.description {
+    font-size: 1.1rem;
+    font-weight: 500;
+    border: 1px solid var(--vscode-input-border);
+    margin-top: 16px;
+    padding: 4px 12px;
+}
+
 .story {
+    font-size: 13px;
+    font-weight: normal;
     border: 1px solid #A94CE4;
     padding: 8px;
     margin: 16px 0;
@@ -7,7 +17,7 @@
     line-height: 1.5;
 }
 
-.story::before {
+.story:not(img)::before {
     content: "STORY";
     color: #c781f0;
     font-weight: 600;
@@ -19,6 +29,8 @@
 
 .example-input,
 .example-output {
+    font-size: 13px;
+    font-weight: normal;
     border: 1px dotted #497F3F;
     padding: 5px;
     margin: 16px 0;
@@ -179,6 +191,20 @@ h2 {
     cursor: default;
 }
 
+.button.button-secondary {
+    color: var(--vscode-button-secondaryForeground);
+    background-color: var(--vscode-button-secondaryBackground);
+    border: 1px solid var(--vscode-button-secondaryBorder, transparent);
+}
+
+.button.button-secondary:hover,
+.button.button-secondary:focus,
+.button.button-secondary:active {
+    color: var(--vscode-button-secondaryForeground);
+    background-color: var(--vscode-button-secondaryHoverBackground);
+    border: 1px solid var(--vscode-button-secondaryBorder, transparent);
+}
+
 .feedback-form {
     border: 1px solid var(--vscode-input-border);
     padding: 10px;
@@ -198,4 +224,53 @@ h2 {
 
 #feedback-message {
     resize: vertical;
+}
+
+.title-bar {
+    display: flex;
+    flex-direction: row;
+}
+
+.title-bar h1 {
+    flex-grow: 1;
+    margin-left: 16px;
+    margin-right: 16px;
+}
+
+#next-button,
+#previous-button {
+    color: var(--vscode-button-secondaryForeground);
+    background-color: var(--vscode-button-secondaryBackground);
+    border: 1px solid var(--vscode-button-secondaryBorder, transparent);
+    box-sizing: border-box;
+    display: flex;
+    width: 100%;
+    max-width: 300px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-align: center;
+    cursor: pointer;
+    justify-content: center;
+    align-items: center;
+    line-height: 16px;
+    font-size: 12px;
+    overflow-wrap: normal;
+    text-decoration: none;
+    flex-basis: content;
+    flex-shrink: 0;
+    flex-grow: 0;
+    height: fit-content;
+    margin-top: 1rem;
+}
+
+.confetti {
+    background-image: url(./confetti.gif);
+    background-size: 50%;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+}
+
+#show-confetti {
+    cursor: pointer;
 }

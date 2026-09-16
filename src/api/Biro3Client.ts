@@ -40,6 +40,7 @@ export class Biro3Client {
     submissionFiles: Record<number, ReadonlyArray<{ filename: string; content: string }>>
     taskImages: Record<`${number}-${number}`, string>
     starterFiles: Record<`${number}-${number}`, StarterFile>
+    userSettings: Record<string, any>
     private readonly submissionWaiters: Record<number, Promise<SubmissionStatus>>
     private readonly submissionWaiterCallbacks: Record<number, Array<(status: SubmissionStatus) => void | Promise<void>>>
 
@@ -58,6 +59,7 @@ export class Biro3Client {
         this.submissionFiles = {}
         this.taskImages = {}
         this.starterFiles = {}
+        this.userSettings = {}
         this.submissionWaiters = {}
         this.submissionWaiterCallbacks = {}
     }
@@ -88,7 +90,7 @@ export class Biro3Client {
                     if (error.status === 401) {
                         switch (retries++) {
                             case 0:
-                                log.warn(`Refreshing access token ...`)
+                                log.info(`Refreshing access token ...`)
                                 try {
                                     await this.refreshAccessToken()
                                 } catch (error) {
@@ -97,7 +99,7 @@ export class Biro3Client {
                                 continue
                             case 1:
                                 if (this.username && this.password) {
-                                    log.warn(`Logging in again ...`)
+                                    log.info(`Logging in again ...`)
                                     try {
                                         await this.fetchAccessToken(this.username, this.password)
                                     } catch (error) {
@@ -131,11 +133,7 @@ export class Biro3Client {
         try {
             res = await promise
         } catch (error) {
-            if (String(error) === "TypeError: fetch failed") {
-                throw new Error(`Ajaj`)
-            } else {
-                throw error
-            }
+            throw error
         }
 
         if (!res.ok) {
@@ -226,7 +224,7 @@ export class Biro3Client {
 
     async login() {
         do {
-            const usernameInput = await vscode.window.showInputBox({
+            const usernameInput = this.username ?? await vscode.window.showInputBox({
                 password: false,
                 title: vscode.l10n.t('Bíró Login'),
                 placeHolder: 'hxxxxxx',
@@ -238,7 +236,7 @@ export class Biro3Client {
                 throw new OkayError('Login canceled')
             }
 
-            const passwordInput = await vscode.window.showInputBox({
+            const passwordInput = this.password ?? await vscode.window.showInputBox({
                 password: true,
                 title: vscode.l10n.t('Bíró Login'),
                 prompt: vscode.l10n.t('Password'),
@@ -310,6 +308,7 @@ export class Biro3Client {
         this.submissionStatuses = {}
         this.reports = {}
         this.submissionFiles = {}
+        this.userSettings = {}
     }
 
     async getSubjectInstance(instanceId: number) {
@@ -506,5 +505,37 @@ export class Biro3Client {
             delete this.submissionWaiterCallbacks[submissionId]
             delete this.submissionWaiters[submissionId]
         }
+    }
+
+    assignmentOfExercise(exerciseId: number) {
+        return Object.values(this.assignmentDetails).find(v => v.exerciseStatuses.find(v => v.assignedExerciseId === exerciseId)) ?? null
+    }
+
+    async getUserSetting<D>(key: string, _default?: D): Promise<unknown | D> {
+        if (key in this.userSettings) return this.userSettings[key]
+        const v = await this.fetchUserSettings([key])
+        if (key in v) return v[key]
+        return _default
+    }
+
+    async getUserSettings(keys: ReadonlyArray<string>): Promise<Record<string, unknown>> {
+        const res: any = {}
+        for (const key of keys) {
+            if (key in this.userSettings) res[key] = this.userSettings[key]
+            else return this.getUserSettings(keys)
+        }
+        return res
+    }
+
+    async fetchUserSettings(keys: ReadonlyArray<string>): Promise<Record<string, unknown>> {
+        const v = await this.getJson<ReadonlyArray<{ key: string, value: any }>>(`https://biro3.inf.u-szeged.hu/api/v1/user-settings?${keys.map(v => `settings=${encodeURIComponent(v)}`).join('&')}`)
+        const res: any = {}
+        for (const w of v) {
+            res[w.key] = this.userSettings[w.key] = (<any>{
+                "false": false,
+                "true": true,
+            })[w.value] ?? w.value
+        }
+        return res
     }
 }

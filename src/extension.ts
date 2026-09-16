@@ -61,19 +61,47 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
 
-    context.subscriptions.push(vscode.commands.registerCommand('vscbiro3.selectExercise', async (exerciseId: number) => {
+    context.subscriptions.push(vscode.commands.registerCommand('vscbiro3.selectExercise', async (exerciseId: number | 'next' | 'previous') => {
         try {
+            let exercise = null
+
+            if (exerciseId === 'next' || exerciseId === 'previous') {
+                if (!selectedExerciseId) {
+                    vscode.window.showErrorMessage(vscode.l10n.t('No exercise selected'))
+                    return
+                }
+
+                exercise = await client.withReauth(() => client.getExercise(selectedExerciseId!))
+
+                const assignment = client.assignmentOfExercise(selectedExerciseId!)
+                if (!assignment) {
+                    vscode.window.showErrorMessage(vscode.l10n.t('Assignment not found, sorry'))
+                    return
+                }
+
+                const nextIndex = exercise.indexInTaskList + (exerciseId === 'next' ? 1 : -1)
+                const nextExercise = assignment.exerciseStatuses.find(v => v.exerciseIndex === nextIndex)
+                if (!nextExercise) {
+                    vscode.window.showErrorMessage(vscode.l10n.t('No'))
+                    return
+                }
+
+                exerciseId = nextExercise.assignedExerciseId
+            }
+
             if (exercisePanel && !exercisePanel.disposed) {
                 exercisePanel.reveal(exerciseId, true)
             } else {
                 exercisePanel = ExercisePanel.create(context.extensionUri, client, exerciseId, onExerciseViewDispose)
             }
             selectedExerciseId = exerciseId
-            const exercise = await client.withReauth(() => client.getExercise(exerciseId))
+            exercise = await client.withReauth(() => client.getExercise(<number>exerciseId))
             exerciseStatusItem.text = `${exercise.indexInTaskList}. ${exercise.displayName}`
             exerciseStatusItem.show()
 
             vscode.commands.executeCommand("setContext", "vscbiro3.allowSubmission", selectedExerciseId !== null)
+
+            coursesViewProvider.refresh()
         } catch (error) {
             log.error(String(error))
             handleError(error)

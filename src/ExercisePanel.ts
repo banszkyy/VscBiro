@@ -1,8 +1,8 @@
 import * as vscode from 'vscode'
-import { Exercise, Assignment } from './api/models'
+import { Exercise } from './api/models'
 import { Biro3Client } from './api/Biro3Client'
 import { log } from './extension'
-import { rateLimiter, getNonce, handleError } from './utils'
+import { rateLimiter, getNonce, handleError, sleep } from './utils'
 // @ts-ignore
 const marked: typeof import('marked') = require('marked')
 
@@ -18,7 +18,9 @@ export default class ExercisePanel {
     private exerciseId: number | null
     private lock: Promise<void>
     private disposables: Array<vscode.Disposable> = []
+    //@ts-ignore
     private readonly refreshHtmlLimited: (v: Exercise) => Promise<void>
+    private showConfetti: boolean
 
     public static create(extensionUri: vscode.Uri, client: Biro3Client, exerciseId: number, onDispose: () => void) {
         const panel = vscode.window.createWebviewPanel(
@@ -42,6 +44,7 @@ export default class ExercisePanel {
         this.lock = Promise.resolve()
         this.client = client
         this.onDispose = onDispose
+        this.showConfetti = false
 
         this.panel.iconPath = vscode.Uri.joinPath(extensionUri, 'assets', 'icon-small.svg')
 
@@ -80,6 +83,20 @@ export default class ExercisePanel {
                         if (this.exerciseId === null) { return }
                         vscode.commands.executeCommand('vscbiro3.submit')
                         return
+                    case 'next-exercise':
+                        if (this.exerciseId === null) { return }
+                        vscode.commands.executeCommand('vscbiro3.selectExercise', 'next')
+                        return
+                    case 'previous-exercise':
+                        if (this.exerciseId === null) { return }
+                        vscode.commands.executeCommand('vscbiro3.selectExercise', 'previous')
+                        return
+                    case 'stop-confetti':
+                        this.showConfetti = false
+                        return
+                    case 'show-confetti':
+                        this.showConfetti = true
+                        return
                 }
             },
             null,
@@ -87,15 +104,6 @@ export default class ExercisePanel {
         )
 
         this.refreshHtmlLimited = rateLimiter((v: Exercise) => this.refreshHtml(v), 500)
-    }
-
-    public deserialize(state: any) {
-        log.debug(`Exercise webview deserialized`, state)
-        this.panel.webview.options = getWebviewOptions(this.extensionUri)
-        if (typeof state === 'object' && "exerciseId" in state) {
-            this.exerciseId = Number(state.exerciseId)
-            if (Number.isNaN(this.exerciseId) || !Number.isInteger(this.exerciseId) || this.exerciseId < 0) this.exerciseId = null
-        }
     }
 
     public dispose() {
@@ -123,6 +131,7 @@ export default class ExercisePanel {
             this.update(clearContent === undefined ? true : clearContent)
         } else {
             this.exerciseId = exerciseId
+            this.showConfetti = false
             this.update(true)
         }
     }
@@ -166,10 +175,10 @@ export default class ExercisePanel {
             const exercise = await this.client.withReauth(() => this.client.smartGetExercise(this.exerciseId ?? 0))
 
             const tasks: Array<Promise<any>> = []
-            let shouldRefreshLater = false
+            let isUnderEvaluation = false
             for (const submission of exercise.submissions) {
                 if (submission.status === "UNDER_EVALUATION") {
-                    shouldRefreshLater = true
+                    isUnderEvaluation = true
                 }
 
                 tasks.push(this.client.withReauth(() => this.client.getSubmissionFiles(submission.submissionId)))
@@ -178,30 +187,44 @@ export default class ExercisePanel {
                 }
             }
 
-            for (const taskImage of exercise.taskImages) {
-                tasks.push(this.client.withReauth(() => this.client.getTaskImage(exercise.assignedExerciseId, taskImage.taskimageId)))
-            }
-
-            if (shouldRefreshLater) {
+            if (isUnderEvaluation) {
                 log.debug(`Exercise webview will refresh later`)
 
-                Promise.allSettled(tasks)
+                Promise.allSettled([...tasks, sleep(1000)])
                     .then(() => {
-                        setTimeout(async () => {
-                            if (this.exerciseId !== exercise.assignedExerciseId) {
-                                log.warn(`Exercise webview changed, will not refresh`)
-                                return
-                            }
+                        if (this.exerciseId !== exercise.assignedExerciseId) {
+                            log.warn(`Exercise webview changed, will not refresh automatically`)
+                            return
+                        }
 
-                            log.debug(`Exercise webview is automatically refreshing`)
-                            this.update(false)
-                        }, 1000)
+                        log.debug(`Exercise webview is automatically refreshing`)
+                        this.update(false)
                     })
-                    .catch(error => log.error(String(error)))
+                    .catch(error => {
+                        log.error(String(error))
+                        handleError(error)
+                    })
+            } else {
+                for (const task of tasks) {
+                    if (!await task.isFinished()) task.then(() => this.refreshHtmlLimited(exercise))
+                }
             }
 
-            for (const task of tasks) {
-                if ((await Promise.race([task, Promise.resolve('pending')])) === 'pending') task.then(() => this.refreshHtmlLimited(exercise))
+            {
+                const t = this.client.getUserSetting('student_task_show_stories', true)
+                    .then(async res => {
+                        if (!res) return
+
+                        for (const taskImage of exercise.taskImages) {
+                            const t = this.client.withReauth(() => this.client.getTaskImage(exercise.assignedExerciseId, taskImage.taskimageId))
+                            if (!await t.isFinished()) t.then(() => this.refreshHtmlLimited(exercise))
+                        }
+                    })
+                    .catch(error => {
+                        log.error(String(error))
+                        handleError(error)
+                    })
+                if (!await t.isFinished()) t.then(() => this.refreshHtmlLimited(exercise))
             }
 
             if (this.exerciseId !== exercise.assignedExerciseId) {
@@ -225,24 +248,23 @@ export default class ExercisePanel {
             return
         }
 
+        const showStory = 'student_task_show_stories' in this.client.userSettings ? this.client.userSettings['student_task_show_stories'] : true
+
         log.debug(`Refreshing exercise webview HTML`)
 
-        let assignment: Assignment | null = null
-
-        for (const element of Object.values(this.client.assignmentDetails).flat()) {
-            if (element.exerciseStatuses.some(v => v.assignedExerciseId === exercise.assignedExerciseId)) {
-                assignment = element.assignmentDetails
-                break
-            }
-        }
+        const assignment = this.client.assignmentOfExercise(exercise.assignedExerciseId!)
 
         let compiledDescription = exercise.description
         for (const taskImage of exercise.taskImages) {
             const data = this.client.taskImages[`${exercise.assignedExerciseId}-${taskImage.taskimageId}`]
             if (data) {
-                compiledDescription = compiledDescription.replaceAll(`src="${taskImage.filename}"`, `src="${data}"`)
+                compiledDescription = compiledDescription.replace(`src="${taskImage.filename}"`, `src="${data}"`)
+            } else {
+                compiledDescription = compiledDescription.replace(new RegExp(`<img\\s+class="story"\\s+alt=".+"\\s+src="${taskImage.filename}"\\s*\\/?>`), '')
             }
         }
+
+        const goodSubmission = exercise.score >= exercise.maxScore ? exercise.submissions.find(v => v.score >= exercise.maxScore) : undefined
 
         const nonce = getNonce()
 
@@ -251,20 +273,32 @@ export default class ExercisePanel {
 			<html lang="en">
 			<head>
 				<meta charset="UTF-8">
-				<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this.panel.webview.cspSource}; img-src data:; script-src 'nonce-${nonce}';">
+				<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this.panel.webview.cspSource}; img-src ${this.panel.webview.cspSource} data:; script-src 'nonce-${nonce}';">
 				<meta name="viewport" content="width=device-width, initial-scale=1.0">
 				<link href="${this.panel.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'assets', 'reset.css'))}" rel="stylesheet">
 				<link href="${this.panel.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'assets', 'vscode.css'))}" rel="stylesheet">
 				<link href="${this.panel.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'assets', 'main.css'))}" rel="stylesheet">
+				${(showStory ? '' : `<link href="${this.panel.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'assets', 'hide-story.css'))}" rel="stylesheet">`)}
 				<title>Meow</title>
 			</head>
 			<body>
-				<h1>${exercise.indexInTaskList}. ${exercise.displayName} (${exercise.maxScore} pont)</h1>
+                <div id="confetti" class="${(exercise.score >= exercise.maxScore && this.showConfetti) ? 'confetti' : ''}"></div>
+                <div class="title-bar">
+                    ${(() => {
+                if (exercise.indexInTaskList <= 1) return ''
+                return '<div class="button button-secondary" id="previous-button"><svg xmlns="http://www.w3.org/2000/svg" height="24px" width="24px" viewBox="0 -960 960 960" fill="currentColor"><path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z"/></svg></div>'
+            })()}
+    				<h1>${exercise.indexInTaskList}. ${exercise.displayName} (${exercise.maxScore} pont)</h1>
+                    ${(() => {
+                if (assignment && exercise.indexInTaskList >= assignment.exerciseStatuses.length) return ''
+                return '<div class="button button-secondary" id="next-button"><svg xmlns="http://www.w3.org/2000/svg" height="24px" width="24px" viewBox="0 -960 960 960" fill="currentColor"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg></div>'
+            })()}
+                </div>
                 ${(() => {
                 if (!assignment) { return '' }
 
-                const startTime = Date.parse(assignment.startTime)
-                const endTime = Date.parse(assignment.endTime)
+                const startTime = Date.parse(assignment.assignmentDetails.startTime)
+                const endTime = Date.parse(assignment.assignmentDetails.endTime)
                 const now = Date.now()
 
                 if (now < startTime) {
@@ -309,7 +343,7 @@ export default class ExercisePanel {
                     <a class="button" id="submit-file-button" role="button" aria-disabled="${(exercise.submissions.length < exercise.uploadLimit) ? 'false' : 'true'}" disabled="${(exercise.submissions.length < exercise.uploadLimit) ? 'false' : 'true'}">${vscode.l10n.t('Submit File')}</a>
 					${exercise.submissions.map(v => `
 						<div class="submission">
-							<h3>${v.name} <span class="submission-score score ${v.score >= exercise.maxScore ? 'success' : v.score === 0 ? 'fail' : 'almost'}">${v.score} ${vscode.l10n.t('points')}</span> <span>${vscode.l10n.t(v.status)}</span> <span class="submission-time time" title="${new Date(Date.parse(v.submissionTime)).toLocaleString()}">${v.submissionTime}</span></h3>
+							<h3>${v.name} <span class="submission-score score ${v.score >= exercise.maxScore ? 'success' : v.score === 0 ? 'fail' : 'almost'}">${v.score} ${vscode.l10n.t('points')}</span> <span>${vscode.l10n.t(v.status)}</span> <span class="submission-time time" title="${new Date(Date.parse(v.submissionTime)).toLocaleString()}">${v.submissionTime}</span>${v.submissionId === goodSubmission?.submissionId ? ` <span id="show-confetti">🎉</span>` : ''}</h3>
 							<div class="evaluations" id="evaluations">
 								${v.evaluations.map(v => `
 									${v.message}
@@ -348,7 +382,12 @@ export default class ExercisePanel {
 					`).reverse().join('')}
 				</div>
 
-                <script type="application/json" id="webview-state">${JSON.stringify({ exerciseId: this.exerciseId })}</script>
+                <script type="application/json" id="l10n">${JSON.stringify({
+                'sec': vscode.l10n.t('seconsd ago'),
+                'min': vscode.l10n.t('minutes ago'),
+                'hour': vscode.l10n.t('hours ago'),
+                'day': vscode.l10n.t('days ago'),
+            })}</script>
 				<script nonce="${nonce}" src="${this.panel.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'assets', 'main.js'))}"></script>
 			</body>
 			</html>`

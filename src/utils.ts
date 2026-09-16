@@ -66,6 +66,7 @@ export function rateLimiter<TArgs extends any[], TReturn>(f: (...args: TArgs) =>
         const now = Date.now()
         const d = now - lastTime
         if (d < cooldown) await sleep(d)
+        lastTime = now
         return f(...args)
     })
 }
@@ -92,3 +93,12 @@ export function handleError(error: unknown) {
         })
 }
 
+declare global {
+    interface Promise<T> {
+        isFinished(): Promise<boolean>
+    }
+}
+
+Promise.prototype.isFinished = async function () {
+    return (await Promise.race([this, Promise.resolve('pending')])) !== 'pending'
+}

@@ -1,4 +1,6 @@
 (function () {
+    const l10n = JSON.parse(document.getElementById('l10n')?.innerText ?? "{}")
+
     function refreshTimeLabels() {
         const now = Math.floor(Date.now() / 1000)
         for (const element of document.getElementsByClassName('time')) {
@@ -9,23 +11,27 @@
                 t = Math.floor(Date.parse(element.textContent) / 1000)
                 element.setAttribute('data-time', t)
             }
+
             let d = now - t
             if (d < 60) {
-                element.textContent = `${d} másodperce`
+                element.textContent = `${d} ${l10n['sec']}`
                 continue
             }
+
             d = Math.floor(d / 60)
             if (d < 60) {
-                element.textContent = `${d} perce`
+                element.textContent = `${d} ${l10n['min']}`
                 continue
             }
+
             d = Math.floor(d / 60)
             if (d < 24) {
-                element.textContent = `${d} órája`
+                element.textContent = `${d} ${l10n['hour']}`
                 continue
             }
-            const date = new Date(t * 1000)
-            element.textContent = `${date.getFullYear()}. ${date.getMonth() + 1}. ${date.getDate()}. ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`
+
+            d = Math.floor(d / 24)
+            element.textContent = `${d} ${l10n['day']}`
         }
     }
 
@@ -62,6 +68,37 @@
         })
     }
 
-    const state = document.getElementById('webview-state')?.innerText
-    if (state) vscode.setState(JSON.parse(state))
+    if (submitFileButton = document.getElementById('next-button')) {
+        submitFileButton.addEventListener('click', () => {
+            vscode.postMessage({
+                command: 'next-exercise',
+            })
+        })
+    }
+
+    if (submitFileButton = document.getElementById('previous-button')) {
+        submitFileButton.addEventListener('click', () => {
+            vscode.postMessage({
+                command: 'previous-exercise',
+            })
+        })
+    }
+
+    if (confetti = document.getElementById('confetti')) {
+        confetti.addEventListener('click', () => {
+            vscode.postMessage({
+                command: 'stop-confetti'
+            })
+            document.getElementById('confetti')?.classList.remove('confetti')
+        })
+    }
+
+    if (confetti = document.getElementById('show-confetti')) {
+        confetti.addEventListener('click', () => {
+            vscode.postMessage({
+                command: 'show-confetti'
+            })
+            document.getElementById('confetti')?.classList.add('confetti')
+        })
+    }
 })()

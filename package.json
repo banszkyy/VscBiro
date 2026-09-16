@@ -3,7 +3,7 @@
   "displayName": "SZTE Bíró 3",
   "icon": "assets/icon.png",
   "description": "",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "engines": {
     "vscode": "^1.107.0"
   },
@@ -142,7 +142,8 @@
     "@vscode/vsce": "^3.9.2",
     "eslint": "^9.39.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.48.1"
+    "typescript-eslint": "^8.48.1",
+    "xml2js": "^0.6.2"
   },
   "dependencies": {
     "@sentry/node": "^10.74.0",
