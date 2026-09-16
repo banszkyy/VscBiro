@@ -161,7 +161,7 @@ export class Biro3Client {
             headers['Cookie'] = `refresh-token=${this.refreshToken}`
         }
 
-        log.debug(`GET ${url}`)
+        log.info(`GET ${url}`)
         const res = await this._fetch(fetch(url, {
             credentials: 'include',
             headers: headers,
@@ -201,7 +201,7 @@ export class Biro3Client {
             _headers['Cookie'] = `refresh-token=${this.refreshToken}`
         }
 
-        log.debug(`POST ${url}\n${body}`)
+        log.info(`POST ${url}\n${body}`)
         const res = await this._fetch(fetch(url, {
             credentials: 'include',
             headers: {
@@ -364,12 +364,7 @@ export class Biro3Client {
 
     async smartGetExercise(exerciseId: number) {
         const v = this.exercises[exerciseId]
-        if (v) {
-            for (const submission of v.submissions) {
-                if (submission.status === "UNDER_EVALUATION") {
-                    return await this.fetchExercise(exerciseId)
-                }
-            }
+        if (v && !v.submissions.find(v => v.status === "UNDER_EVALUATION")) {
             return v
         }
         return await this.fetchExercise(exerciseId)
@@ -448,8 +443,7 @@ export class Biro3Client {
         for (const item of v) {
             const content = utf8Decoder.decode(Uint8Array.from(atob(item.content), v => v.charCodeAt(0)))
             try {
-                const d = JSON.parse(content)
-                item.content = d
+                item.content = JSON.parse(content)
             } catch (error) {
                 item.content = content
             }

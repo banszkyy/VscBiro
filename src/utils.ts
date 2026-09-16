@@ -83,12 +83,13 @@ export function getNonce() {
 export function handleError(error: unknown) {
     if (error instanceof OkayError) return
     if (error instanceof ApiError) return
+    if (String(error) === 'TypeError: fetch failed') return
 
     vscode.window.showErrorMessage(vscode.l10n.t('An error occurred! Please report it so I can fix it.'), vscode.l10n.t('Report'))
         .then(res => {
             if (res === vscode.l10n.t('Report')) {
                 sentry.captureException(error)
-                vscode.window.showInformationMessage(vscode.l10n.t('Thanks'))
+                vscode.window.showInformationMessage(vscode.l10n.t('Thanks 😽'))
             }
         })
 }

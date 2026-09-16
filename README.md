@@ -1,4 +1,4 @@
-# Bíró 3 bővítmény Visual Studio Code-hoz
+# VSCode bővítmény a [Bíró 3](https://biro3.inf.u-szeged.hu/)-hoz
 
 ## Bejelentkezés
 

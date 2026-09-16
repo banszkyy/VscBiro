@@ -35,7 +35,7 @@
         }
     }
 
-    setInterval(refreshTimeLabels, 5000)
+    setInterval(refreshTimeLabels, 500)
     refreshTimeLabels()
 
     const vscode = acquireVsCodeApi()
@@ -94,11 +94,23 @@
     }
 
     if (confetti = document.getElementById('show-confetti')) {
-        confetti.addEventListener('click', () => {
+        confetti.addEventListener('click', (/** @type {MouseEvent} */ e) => {
             vscode.postMessage({
                 command: 'show-confetti'
             })
             document.getElementById('confetti')?.classList.add('confetti')
+            e.stopPropagation()
+        })
+    }
+
+    for (const submission of document.getElementsByClassName('submission')) {
+        submission.getElementsByClassName('submission-title')[0]?.addEventListener('click', () => {
+            const w = submission.classList.toggle('hidden')
+            vscode.postMessage({
+                command: 'toggle-submission-visibility',
+                submissionId: Number.parseInt(submission.id.split('-')[1]),
+                visible: !w,
+            })
         })
     }
 })()

@@ -53,7 +53,7 @@ export default class FeedbackView {
                             },
                         })
                         log.debug(`Feedback res:`, res)
-                        vscode.window.showInformationMessage(vscode.l10n.t('Thanks'))
+                        vscode.window.showInformationMessage(vscode.l10n.t('Thanks 😽'))
                         this.dispose()
                         return
                 }

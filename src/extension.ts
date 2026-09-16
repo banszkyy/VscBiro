@@ -2,7 +2,7 @@ import path from 'path'
 import * as vscode from 'vscode'
 import { Biro3Client } from './api/Biro3Client'
 import { BiroExplorerProvider } from './BiroExplorerProvider'
-import ExercisePanel from './ExercisePanel'
+import ExerciseView from './ExerciseView'
 import { getQuery, handleError } from './utils'
 import Sentry from '@sentry/node'
 import FeedbackView from './FeedbackView'
@@ -37,7 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     const client = new Biro3Client()
     let selectedExerciseId: number | null = null
-    let exercisePanel: ExercisePanel | null = null
+    let exercisePanel: ExerciseView | null = null
     let feedbackView: FeedbackView | null = null
 
 
@@ -92,7 +92,7 @@ export function activate(context: vscode.ExtensionContext) {
             if (exercisePanel && !exercisePanel.disposed) {
                 exercisePanel.reveal(exerciseId, true)
             } else {
-                exercisePanel = ExercisePanel.create(context.extensionUri, client, exerciseId, onExerciseViewDispose)
+                exercisePanel = ExerciseView.create(context.extensionUri, client, exerciseId, onExerciseViewDispose)
             }
             selectedExerciseId = exerciseId
             exercise = await client.withReauth(() => client.getExercise(<number>exerciseId))
@@ -197,9 +197,9 @@ export function activate(context: vscode.ExtensionContext) {
 
             if (status.finished) {
                 if (status.score >= status.maxScore) {
-                    vscode.window.showInformationMessage(vscode.l10n.t(`Your submission is correct! ({0}/{1})`, status.score, status.maxScore))
+                    vscode.window.showInformationMessage(vscode.l10n.t(`✅ Your submission is correct! ({0}/{1})`, status.score, status.maxScore))
                 } else {
-                    vscode.window.showInformationMessage(vscode.l10n.t(`Your submission is incorrect! ({0}/{1})`, status.score, status.maxScore))
+                    vscode.window.showInformationMessage(vscode.l10n.t(`❌ Your submission is incorrect! ({0}/{1})`, status.score, status.maxScore))
                 }
             }
         })

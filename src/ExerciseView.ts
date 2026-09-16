@@ -6,7 +6,7 @@ import { rateLimiter, getNonce, handleError, sleep } from './utils'
 // @ts-ignore
 const marked: typeof import('marked') = require('marked')
 
-export default class ExercisePanel {
+export default class ExerciseView {
     public static readonly viewType = 'exercise'
 
     public disposed: boolean
@@ -21,10 +21,12 @@ export default class ExercisePanel {
     //@ts-ignore
     private readonly refreshHtmlLimited: (v: Exercise) => Promise<void>
     private showConfetti: boolean
+    private showEvaluatingCat: boolean
+    private submissionVisibilities: Record<number, boolean>
 
     public static create(extensionUri: vscode.Uri, client: Biro3Client, exerciseId: number, onDispose: () => void) {
         const panel = vscode.window.createWebviewPanel(
-            ExercisePanel.viewType,
+            ExerciseView.viewType,
             `Exercise ${exerciseId}`,
             {
                 viewColumn: vscode.ViewColumn.Active,
@@ -33,7 +35,7 @@ export default class ExercisePanel {
             getWebviewOptions(extensionUri)
         )
 
-        return new ExercisePanel(panel, extensionUri, client, exerciseId, onDispose)
+        return new ExerciseView(panel, extensionUri, client, exerciseId, onDispose)
     }
 
     constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, client: Biro3Client, exerciseId: number | null, onDispose: () => void) {
@@ -45,6 +47,8 @@ export default class ExercisePanel {
         this.client = client
         this.onDispose = onDispose
         this.showConfetti = false
+        this.showEvaluatingCat = true
+        this.submissionVisibilities = {}
 
         this.panel.iconPath = vscode.Uri.joinPath(extensionUri, 'assets', 'icon-small.svg')
 
@@ -97,6 +101,9 @@ export default class ExercisePanel {
                     case 'show-confetti':
                         this.showConfetti = true
                         return
+                    case 'toggle-submission-visibility':
+                        this.submissionVisibilities[message.submissionId] = message.visible
+                        return
                 }
             },
             null,
@@ -131,6 +138,7 @@ export default class ExercisePanel {
             this.update(clearContent === undefined ? true : clearContent)
         } else {
             this.exerciseId = exerciseId
+            this.submissionVisibilities = {}
             this.showConfetti = false
             this.update(true)
         }
@@ -172,7 +180,12 @@ export default class ExercisePanel {
                 `
             }
 
-            const exercise = await this.client.withReauth(() => this.client.smartGetExercise(this.exerciseId ?? 0))
+            const existing = this.client.exercises[this.exerciseId]
+            const exercise = await this.client.withReauth(() => this.client.smartGetExercise(this.exerciseId!))
+            let didNotChange = false
+            if (!clearContent && existing && JSON.stringify(exercise) === JSON.stringify(existing)) {
+                didNotChange = true
+            }
 
             const tasks: Array<Promise<any>> = []
             let isUnderEvaluation = false
@@ -204,6 +217,11 @@ export default class ExercisePanel {
                         log.error(String(error))
                         handleError(error)
                     })
+
+                if (didNotChange) {
+                    log.info(`Skipping updating exercise HTML: Exercise hasn't change`)
+                    return
+                }
             } else {
                 for (const task of tasks) {
                     if (!await task.isFinished()) task.then(() => this.refreshHtmlLimited(exercise))
@@ -295,7 +313,7 @@ export default class ExercisePanel {
             })()}
                 </div>
                 ${(() => {
-                if (!assignment) { return '' }
+                if (!assignment) return ''
 
                 const startTime = Date.parse(assignment.assignmentDetails.startTime)
                 const endTime = Date.parse(assignment.assignmentDetails.endTime)
@@ -318,7 +336,7 @@ export default class ExercisePanel {
                 }
             })()}
                 <div class="debug">
-                    <b>${vscode.l10n.t('Type')}:</b> ${vscode.l10n.t(exercise.type)} <br>
+                    <!--<b>${vscode.l10n.t('Type')}:</b> ${vscode.l10n.t(exercise.type)} <br>-->
                     <b>${vscode.l10n.t('Difficulty')}:</b> ${"⭐".repeat(Math.round(Math.max(1, Math.min(10, exercise.difficultyLevel))))} <br>
                     <b>${vscode.l10n.t('Expected file format')}:</b> ${exercise.expectedFileFormat} <br>
                 </div>
@@ -342,52 +360,70 @@ export default class ExercisePanel {
 				<div class="submissions">
                     <a class="button" id="submit-file-button" role="button" aria-disabled="${(exercise.submissions.length < exercise.uploadLimit) ? 'false' : 'true'}" disabled="${(exercise.submissions.length < exercise.uploadLimit) ? 'false' : 'true'}">${vscode.l10n.t('Submit File')}</a>
 					${exercise.submissions.map(v => `
-						<div class="submission">
-							<h3>${v.name} <span class="submission-score score ${v.score >= exercise.maxScore ? 'success' : v.score === 0 ? 'fail' : 'almost'}">${v.score} ${vscode.l10n.t('points')}</span> <span>${vscode.l10n.t(v.status)}</span> <span class="submission-time time" title="${new Date(Date.parse(v.submissionTime)).toLocaleString()}">${v.submissionTime}</span>${v.submissionId === goodSubmission?.submissionId ? ` <span id="show-confetti">🎉</span>` : ''}</h3>
-							<div class="evaluations" id="evaluations">
-								${v.evaluations.map(v => `
-									${v.message}
-									${this.client.reports[v.evaluationId] ? `<div class="reports">
-										${this.client.reports[v.evaluationId].map(v => typeof v.content === 'string' ? `
-											<pre class="report report-message">${v.content}</pre>
-										` : `
-											<div class="report">
-												${v.content.report_type}<br>
-												${v.content.tests.map(v => `
-													<div>
-														<h3>${v.name} - <span class="score ${v.score >= v.tests.reduce((a, b) => a + b.max, 0) ? 'success' : v.score === 0 ? 'fail' : 'almost'}">${v.score} ${vscode.l10n.t('points')}</span></h3>
-														<div>
-															${v.tests.map(v => `
-																<div>
-																	<h4>${v.name} - <span class="score ${v.score >= v.max ? 'success' : v.score === 0 ? 'fail' : 'almost'}">${v.score}/${v.max} ${vscode.l10n.t('points')}</span></h4>
-																	${v.message ? `<pre class="report-message">${v.message}</pre>` : ''}
-																</div>
-															`).join('')}
-														</div>
-													</div>
-												`).join('')}
-											</div>
-										`).join('')}
-									</div>` : `${vscode.l10n.t('No reports')}`}
-								`).join('')}
-							</div>
+						<div class="submission${(this.submissionVisibilities[v.submissionId] === false || (!this.submissionVisibilities[v.submissionId] && v.submissionId !== exercise.submissions[exercise.submissions.length - 1].submissionId)) ? ' hidden' : ''}" id="submission-${v.submissionId}">
+                            ${v.status === 'UNDER_EVALUATION' ? `
+                                <h3>${v.name} <span class="submission-time time" title="${new Date(Date.parse(v.submissionTime)).toLocaleString()}">${v.submissionTime}</span></h3>
+                                <div class="evaluations under-evaluation">
+                                    ${this.showEvaluatingCat ? `<img src="${this.panel.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'assets', 'loading2.gif'))}" width=48 height=48>` : ''}
+                                    <span>${vscode.l10n.t("Under evaluation ...")}</span>
+                                </div>
+                                ` : `
+                                <div class="submission-title">
+                                    <h3>${v.name} <span class="submission-score score ${(v.status === 'EVALUATED' && v.score >= exercise.maxScore) ? 'success' : v.score === 0 ? 'fail' : 'almost'}">${v.score}/${exercise.maxScore} ${vscode.l10n.t('points')}</span> <span class="submission-time time" title="${new Date(Date.parse(v.submissionTime)).toLocaleString()}">${v.submissionTime}</span>${v.submissionId === goodSubmission?.submissionId ? ` <span id="show-confetti">🎉</span>` : ''}</h3>
+                                    <span>...</span>
+                                </div>
+                                <div class="evaluations">
+                                    ${v.evaluations.map(v => `
+                                        ${v.message}
+                                        ${this.client.reports[v.evaluationId] ? `<div class="reports">
+                                            ${this.client.reports[v.evaluationId].map(v => typeof v.content === 'string' ? `
+                                                <pre class="report report-message">${v.content}</pre>
+                                            ` : `
+                                                <div class="report">
+                                                    <!--${v.content.report_type}<br>-->
+                                                    ${v.content.tests.map(v => `
+                                                        <div>
+                                                            <h3>
+                                                                ${v.name}${v.score === undefined ? '' : ` - <span class="score ${v.max ? v.score >= v.max ? 'success' : v.score === 0 ? 'fail' : 'almost' : ''}">${v.score}${v.max ? `/${v.max}` : ''} ${vscode.l10n.t('points')}</span>`}
+                                                            </h3>
+                                                            <div>
+                                                                ${v.tests.map(w => `
+                                                                    <div>
+                                                                        ${w.name === v.name && v.tests.length === 1 ? '' : `
+                                                                            <h4>
+                                                                                ${w.name}${w.max ? ` - <span class="score ${w.score >= w.max ? 'success' : w.score === 0 ? 'fail' : 'almost'}">${w.score}/${w.max} ${vscode.l10n.t('points')}</span>` : ''}
+                                                                            </h4>
+                                                                        `}
+                                                                        ${w.message ? `<pre class="report-message">${w.message}</pre>` : ''}
+                                                                    </div>
+                                                                `).join('')}
+                                                            </div>
+                                                        </div>
+                                                    `).join('')}
+                                                </div>
+                                            `).join('')}
+                                        </div>` : `${vscode.l10n.t('No reports')}`}
+                                    `).join('')}
+                                </div>
+                                `
+                }
                             ${this.client.submissionFiles[v.submissionId] ? `<div class="files">
                                 ${this.client.submissionFiles[v.submissionId].map(w => `
                                     <div class="file">
                                         <span class="link file-link" data-submission=${v.submissionId} data-filename="${w.filename}">${w.filename}</span>
                                     </div>
                                 `).join('')}
-                            </div>` : `${vscode.l10n.t('No files')}`}
+                            </div>` : `<div class="files">${vscode.l10n.t('No files')}</div>`}
 						</div>
 					`).reverse().join('')}
 				</div>
 
                 <script type="application/json" id="l10n">${JSON.stringify({
-                'sec': vscode.l10n.t('seconsd ago'),
-                'min': vscode.l10n.t('minutes ago'),
-                'hour': vscode.l10n.t('hours ago'),
-                'day': vscode.l10n.t('days ago'),
-            })}</script>
+                    'sec': vscode.l10n.t('seconds ago'),
+                    'min': vscode.l10n.t('minutes ago'),
+                    'hour': vscode.l10n.t('hours ago'),
+                    'day': vscode.l10n.t('days ago'),
+                })}</script>
 				<script nonce="${nonce}" src="${this.panel.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'assets', 'main.js'))}"></script>
 			</body>
 			</html>`

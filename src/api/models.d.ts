@@ -65,14 +65,16 @@ export interface ExerciseStatus {
 }
 
 export interface ReportContent {
-    readonly report_type: string
+    readonly report_type: "BIRO3_SIMPLE" | string
     readonly tests: ReadonlyArray<ReportTestGroup>
+    readonly version: "1" | string
 }
 
 export interface ReportTestGroup {
     readonly name: string
     readonly tests: ReadonlyArray<ReportTest>
-    readonly score: number
+    readonly score?: number
+    readonly max?: number
 }
 
 export interface ReportTest {
