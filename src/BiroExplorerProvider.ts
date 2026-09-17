@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { Biro3Client } from './api/Biro3Client'
-import { isAssignmentLocked } from './utils'
+import { handleError, isAssignmentLocked } from './utils'
 import { log } from './extension'
 import { Assignment } from './api/models'
 
@@ -48,8 +48,8 @@ export class BiroExplorerProvider implements vscode.TreeDataProvider<string> {
                 const item = new vscode.TreeItem(assignment.assignmentName, vscode.TreeItemCollapsibleState.Collapsed)
                 item.description = assignment.assignmentDescription
                 item.id = element
+                
                 let suffix = ''
-
                 if (assignment.score === null) {
                     suffix = ''
                 } else if (assignment.score >= assignment.maxScore) {
@@ -88,25 +88,26 @@ export class BiroExplorerProvider implements vscode.TreeDataProvider<string> {
 
             const exercise = this.client.assignmentDetails[assignmentAssignedStudentId]?.exerciseStatuses.find(v => v.assignedExerciseId === exerciseId)
             if (exercise) {
-                const item = new vscode.TreeItem(`${exercise.exerciseIndex}. feladat`, (this.client.exercises[exerciseId]?.starterFiles ?? [null]).length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None)
+                const item = new vscode.TreeItem(vscode.l10n.t('Task {0}', exercise.exerciseIndex), (this.client.exercises[exerciseId]?.starterFiles ?? [null]).length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None)
                 item.id = element
-                if (exercise.exerciseState === "COMPLETED") {
-                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'exercise-icons', 'in-progress.svg')
-                } else if (exercise.exerciseState === "MAX") {
-                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'exercise-icons', 'pass.svg')
-                } else if (exercise.exerciseState === "COMPLETED_ZERO") {
-                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'exercise-icons', 'error.svg')
-                } else if (exercise.exerciseState === "NO_SUBMISSION") {
-                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'exercise-icons', 'no-submission.svg')
-                } else if (exercise.exerciseState === "UNDER_EVALUATION") {
-                    item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'exercise-icons', 'in-progress.svg')
-                } else {
-                    log.error(`Exercise status "${exercise.exerciseState}" not implemented`)
+                item.tooltip = vscode.l10n.t('Select Exercise')
+                switch (exercise.exerciseState) {
+                    case "COMPLETED": item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'exercise-icons', 'in-progress.svg'); break
+                    case "MAX": item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'exercise-icons', 'pass.svg'); break
+                    case "COMPLETED_ZERO": item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'exercise-icons', 'error.svg'); break
+                    case "NO_SUBMISSION": item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'exercise-icons', 'no-submission.svg'); break
+                    case "UNDER_EVALUATION": item.iconPath = vscode.Uri.joinPath(this.extensionRoot, 'assets', 'exercise-icons', 'in-progress.svg'); break
+                    default: {
+                        const e = `Exercise status "${exercise.exerciseState}" not implemented`
+                        log.error(e)
+                        handleError(e)
+                        break
+                    }
                 }
                 item.command = {
                     command: "vscbiro3.selectExercise",
                     arguments: [exerciseId],
-                    title: "Show info",
+                    title: "Select Exercise",
                 }
                 return item
             }
@@ -119,6 +120,7 @@ export class BiroExplorerProvider implements vscode.TreeDataProvider<string> {
 
             const item = new vscode.TreeItem(starterFilename, vscode.TreeItemCollapsibleState.None)
             item.id = element
+            item.tooltip = vscode.l10n.t('Open File')
             item.resourceUri = vscode.Uri.parse(`birostarterfile:${starterFilename}?exerciseId=${exerciseId}&fileId=${starterFileId}`)
             item.command = {
                 command: "vscbiro3.openStarterFile",

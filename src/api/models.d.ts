@@ -61,7 +61,7 @@ export interface TaskImage {
 export interface ExerciseStatus {
     readonly assignedExerciseId: number
     readonly exerciseIndex: number
-    readonly exerciseState: "NO_SUBMISSION" | "COMPLETED" | "MAX" | "COMPLETED_ZERO"
+    readonly exerciseState: "NO_SUBMISSION" | "COMPLETED" | "MAX" | "COMPLETED_ZERO" | "UNDER_EVALUATION"
 }
 
 export interface ReportContent {

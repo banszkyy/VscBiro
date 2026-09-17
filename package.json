@@ -3,7 +3,7 @@
   "displayName": "SZTE Bíró 3",
   "icon": "assets/icon.png",
   "description": "Upload your assignments directly from VSCode",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "engines": {
     "vscode": "^1.107.0"
   },

@@ -97,6 +97,10 @@ img.story {
     text-decoration: underline;
 }
 
+.submissions {
+    margin-bottom: 16px;
+}
+
 .submission {
     border: 1px solid var(--vscode-input-border);
     padding: 4px;

@@ -14,7 +14,7 @@ export default class FeedbackView {
     public static create(extensionUri: vscode.Uri) {
         const panel = vscode.window.createWebviewPanel(
             FeedbackView.viewType,
-            `Feedback`,
+            vscode.l10n.t('Feedback'),
             {
                 viewColumn: vscode.ViewColumn.Active,
                 preserveFocus: false,
@@ -30,6 +30,8 @@ export default class FeedbackView {
         this.panel = panel
         this.extensionUri = extensionUri
 
+        this.panel.iconPath = vscode.Uri.joinPath(extensionUri, 'assets', 'icon-small.svg')
+
         this.panel.onDidDispose(() => this.dispose(), null, this.disposables)
 
         this.panel.webview.onDidReceiveMessage(
@@ -37,7 +39,7 @@ export default class FeedbackView {
                 switch (message.command) {
                     case 'submit':
                         if (!message.message) {
-                            vscode.window.showErrorMessage(`Message is required!`)
+                            vscode.window.showErrorMessage(vscode.l10n.t('Message is required!'))
                             break
                         }
 
@@ -78,7 +80,7 @@ export default class FeedbackView {
 
     public reveal() {
         log.debug(`Revealing feedback webview`)
-        this.panel.reveal(vscode.ViewColumn.Beside, true)
+        this.panel.reveal(undefined, true)
         this.update()
     }
 
@@ -115,22 +117,22 @@ export default class FeedbackView {
 
                 <div class="feedback-form">
                     <div class="form-element">
-                        <label for="feedback-name">Your Name:</label>
-                        <input type="text" id="feedback-name" placeholder="Name"/>
+                        <label for="feedback-name">${vscode.l10n.t('Your Name:')}</label>
+                        <input type="text" id="feedback-name" placeholder="${vscode.l10n.t('Name')}"/>
                     </div>
 
                     <div class="form-element">
-                        <label for="feedback-email">Your Email:</label>
-                        <input type="email" id="feedback-email" placeholder="E-mail"/>
+                        <label for="feedback-email">${vscode.l10n.t('Your Email:')}</label>
+                        <input type="email" id="feedback-email" placeholder="${vscode.l10n.t('E-mail')}"/>
                     </div>
 
                     <div class="form-element">
-                        <label for="feedback-message">What happened? <span class="required-indicator">*</span></label>
-                        <textarea id="feedback-message" placeholder="Message"></textarea>
+                        <label for="feedback-message">${vscode.l10n.t('What happened?')} <span class="required-indicator">*</span></label>
+                        <textarea id="feedback-message" placeholder="${vscode.l10n.t('Message')}"></textarea>
                     </div>
 
                     <div class="form-element">
-                        <button class="button" id="feedback-submit-button">Submit</button>
+                        <button class="button" id="feedback-submit-button">${vscode.l10n.t('Submit')}</button>
                     </div>
                 </div>
 

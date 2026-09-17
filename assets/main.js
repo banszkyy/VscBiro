@@ -13,6 +13,12 @@
             }
 
             let d = now - t
+
+            if (d < 0) {
+                element.textContent = l10n['now']
+                continue
+            }
+
             if (d < 60) {
                 element.textContent = `${d} ${l10n['sec']}`
                 continue

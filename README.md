@@ -30,4 +30,7 @@ A feladat leírás vége fele van egy fájl feltöltés gomb. Arra rányomva kiv
 
 ## Valami nem működik?
 
-Írj nekem Discordon, nyiss egy GitHub issue-t, írj e-mailt, keress meg Coospacen. Amíg nem javítom a hibát, használd a Bíró weboldalát.
+Futtasd a `vscbiro3.feedback` parancsot VSCode-ban, amely megnyitja a visszajelzés űrlapot. Azt kérlek töltsd ki és küld el.
+Vagy írj nekem Discordon, nyiss egy GitHub issuet, írj e-mailt, keress meg Coospacen.
+
+Amíg nem javítom a hibát, használd a Bíró weboldalát.

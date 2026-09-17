@@ -130,7 +130,7 @@ export default class ExerciseView {
 
     public reveal(exerciseId?: number | undefined, clearContent?: boolean | undefined) {
         log.debug(`Revealing exercise webview`, exerciseId, clearContent)
-        this.panel.reveal(vscode.ViewColumn.Beside, true)
+        this.panel.reveal(undefined, true)
 
         if (exerciseId === undefined) {
             this.update(true)
@@ -423,6 +423,7 @@ export default class ExerciseView {
                     'min': vscode.l10n.t('minutes ago'),
                     'hour': vscode.l10n.t('hours ago'),
                     'day': vscode.l10n.t('days ago'),
+                    'now': vscode.l10n.t('just now'),
                 })}</script>
 				<script nonce="${nonce}" src="${this.panel.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'assets', 'main.js'))}"></script>
 			</body>
