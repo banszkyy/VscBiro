@@ -182,7 +182,7 @@ export class Biro3Client {
         return await this.postRaw(url, JSON.stringify(body), {})
     }
 
-    async postRaw(url: string, body: string, headers: Record<string, string>): Promise<Response> {
+    async postRaw(url: string, body: string | Buffer<ArrayBuffer>, headers: Record<string, string>): Promise<Response> {
         let _headers: Record<string, string> = {
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'en-US,en;q=0.5',
@@ -380,32 +380,38 @@ export class Biro3Client {
         return v
     }
 
-    async submitFile(exerciseId: number, filename: string, filecontent: string): Promise<{ id: number }> {
-        const builder = {
-            value: "",
-            appendLine: function (line: string = "") {
-                this.value += line + "\r\n"
-            }
-        }
-
+    async submitFile(exerciseId: number, filename: string, filecontent: string | Buffer<ArrayBufferLike>): Promise<{ id: number }> {
         const boundary = "----geckoformboundary273ffe305e9d16e6289195cb1b17216e"
 
-        builder.appendLine(`--${boundary}`)
-        builder.appendLine("Content-Disposition: form-data; name=\"submissionName\"")
-        builder.appendLine()
-        builder.appendLine()
-        builder.appendLine(`--${boundary}`)
-        builder.appendLine("Content-Disposition: form-data; name=\"post-deadline-submission-confirmed\"")
-        builder.appendLine()
-        builder.appendLine("false")
-        builder.appendLine(`--${boundary}`)
-        builder.appendLine(`Content-Disposition: form-data; name=\"file\"; filename=${JSON.stringify(filename)}`)
-        builder.appendLine("Content-Type: application/octet-stream")
-        builder.appendLine()
-        builder.appendLine(filecontent)
-        builder.appendLine(`--${boundary}--`)
+        const fields = {
+            "submissionName": "",
+            "post-deadline-submission-confirmed": "false",
+        }
 
-        const res = await this.postRaw(`https://biro3.inf.u-szeged.hu/api/v1/students/exercises/${exerciseId}/submissions`, builder.value, {
+        const parts = []
+
+        for (const [name, value] of Object.entries(fields)) {
+            parts.push(Buffer.from(
+                `--${boundary}\r\n` +
+                `Content-Disposition: form-data; name="${name}"\r\n\r\n` +
+                `${value}\r\n`,
+                'utf8'
+            ))
+        }
+
+        parts.push(Buffer.from(
+            `--${boundary}\r\n` +
+            `Content-Disposition: form-data; name="file"; filename=${JSON.stringify(filename)}\r\n` +
+            `Content-Type: application/octet-stream\r\n\r\n`,
+            'utf8'
+        ))
+
+        if (typeof filecontent === "string") parts.push(Buffer.from(filecontent, 'utf8'))
+        else parts.push(filecontent)
+
+        parts.push(Buffer.from(`\r\n--${boundary}--\r\n`, 'utf8'))
+
+        const res = await this.postRaw(`https://biro3.inf.u-szeged.hu/api/v1/students/exercises/${exerciseId}/submissions`, Buffer.concat(parts), {
             "Content-Type": `multipart/form-data; boundary=${boundary}`,
         })
         const d: any = await res.json()

@@ -7,6 +7,7 @@ import { getQuery, handleError } from './utils'
 import Sentry from '@sentry/node'
 import FeedbackView from './FeedbackView'
 import fs from 'fs'
+import AdmZip from 'adm-zip'
 
 export let log: vscode.LogOutputChannel
 export let sentry: Sentry.NodeClient
@@ -108,14 +109,14 @@ export function activate(context: vscode.ExtensionContext) {
         }
     }))
 
-    context.subscriptions.push(vscode.commands.registerCommand('vscbiro3.submit', async (fileUri?: vscode.Uri) => {
+    context.subscriptions.push(vscode.commands.registerCommand('vscbiro3.submit', async (fileUri?: vscode.Uri | ReadonlyArray<vscode.Uri>) => {
         if (selectedExerciseId === null) {
             vscode.window.showErrorMessage(vscode.l10n.t('No exercise has been selected!'))
             return
         }
         const exercise = await client.getExercise(selectedExerciseId)
 
-        if (!fileUri) {
+        if (!fileUri || (Array.isArray(fileUri) && !fileUri.length)) {
             const qp = vscode.window.createQuickPick<vscode.QuickPickItem & { uri: vscode.Uri }>()
             qp.placeholder = 'Select a file to upload'
             qp.busy = true
@@ -146,39 +147,77 @@ export function activate(context: vscode.ExtensionContext) {
             fileUri = picked
         }
 
-        let documentContent = null
-        let documentName = null
+        const resolveDocument = (uri: vscode.Uri) => {
+            let documentContent = null
+            let documentPath = null
 
-        const document = vscode.workspace.textDocuments.find(v => v.uri.path === fileUri.path && v.uri.query === fileUri.query && v.uri.scheme === fileUri.scheme && v.uri.fragment === fileUri.fragment && v.uri.authority === fileUri.authority)
-        if (document) {
-            documentName = document.fileName
+            const document = vscode.workspace.textDocuments.find(v => v.uri.path === uri.path && v.uri.query === uri.query && v.uri.scheme === uri.scheme && v.uri.fragment === uri.fragment && v.uri.authority === uri.authority)
+            if (document) {
+                documentPath = document.fileName
 
-            if (document.isClosed) {
-                vscode.window.showErrorMessage(vscode.l10n.t('File {0} is closed', fileUri.toString()))
-                return
-            }
+                if (document.isClosed) {
+                    vscode.window.showErrorMessage(vscode.l10n.t('File {0} is closed', uri.toString()))
+                    return
+                }
 
-            if ((await vscode.window.showInformationMessage(vscode.l10n.t('Are you sure to upload the file \"{0}\" to the exercise \"{1}. {2}\"?', path.basename(document.fileName), exercise.indexInTaskList, exercise.displayName), { modal: true }, vscode.l10n.t('Yes'))) !== vscode.l10n.t('Yes')) {
-                return
-            }
-
-            documentContent = document.getText()
-        } else if (fileUri.scheme === 'file') {
-            if (fs.existsSync(fileUri.fsPath)) {
-                documentName = fileUri.fsPath
-                documentContent = fs.readFileSync(fileUri.fsPath, 'utf8')
+                documentContent = document.getText()
+            } else if (uri.scheme === 'file') {
+                if (fs.existsSync(uri.fsPath)) {
+                    documentPath = uri.fsPath
+                    documentContent = fs.readFileSync(uri.fsPath, 'utf8')
+                } else {
+                    vscode.window.showErrorMessage(vscode.l10n.t('File {0} not found', uri.fsPath))
+                    return
+                }
             } else {
-                vscode.window.showErrorMessage(vscode.l10n.t('File {0} not found', fileUri.fsPath))
+                vscode.window.showErrorMessage(vscode.l10n.t('File {0} not found', uri.toString()))
+                return
+            }
+
+            return { path: documentPath, content: documentContent }
+        }
+
+        let uploadFilename = null
+        let uploadContent = null
+
+        if (Array.isArray(fileUri)) {
+            const files = []
+            for (const element of <ReadonlyArray<vscode.Uri>>fileUri) {
+                const file = resolveDocument(element)
+                if (!file) return
+                files.push(file)
+            }
+
+            const zip = new AdmZip()
+            for (const file of files) {
+                zip.addFile(path.basename(file.path), Buffer.from(file.content, "utf8"))
+            }
+
+            uploadFilename = 'meow.zip'
+            uploadContent = zip.toBuffer()
+
+            if (!uploadFilename.endsWith(`.${exercise.expectedFileFormat}`)) {
+                vscode.window.showErrorMessage(vscode.l10n.t('The file extension must be .{0}', exercise.expectedFileFormat), { modal: true })
+                return
+            }
+
+            if ((await vscode.window.showInformationMessage(vscode.l10n.t('Are you sure to upload the files {0} to the exercise \"{1}. {2}\"?', files.map(v => `"${v}"`).join(', '), exercise.indexInTaskList, exercise.displayName), { modal: true }, vscode.l10n.t('Yes'))) !== vscode.l10n.t('Yes')) {
                 return
             }
         } else {
-            vscode.window.showErrorMessage(vscode.l10n.t('File {0} not found', fileUri.toString()))
-            return
-        }
+            const file = resolveDocument(<vscode.Uri>fileUri)
+            if (!file) return
+            uploadFilename = path.basename(file.path)
+            uploadContent = file.content
 
-        if (!documentName.endsWith(`.${exercise.expectedFileFormat}`)) {
-            vscode.window.showErrorMessage(vscode.l10n.t('The file extension must be .{0}', exercise.expectedFileFormat), { modal: true })
-            return
+            if (!uploadFilename.endsWith(`.${exercise.expectedFileFormat}`)) {
+                vscode.window.showErrorMessage(vscode.l10n.t('The file extension must be .{0}', exercise.expectedFileFormat), { modal: true })
+                return
+            }
+
+            if ((await vscode.window.showInformationMessage(vscode.l10n.t('Are you sure to upload the file \"{0}\" to the exercise \"{1}. {2}\"?', uploadFilename, exercise.indexInTaskList, exercise.displayName), { modal: true }, vscode.l10n.t('Yes'))) !== vscode.l10n.t('Yes')) {
+                return
+            }
         }
 
         log.debug(`Uploading file ...`)
@@ -186,7 +225,7 @@ export function activate(context: vscode.ExtensionContext) {
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
             title: vscode.l10n.t(`Uploading file`),
-        }, () => client.withReauth(() => client.submitFile(exercise.assignedExerciseId, path.basename(documentName), documentContent)))
+        }, () => client.withReauth(() => client.submitFile(exercise.assignedExerciseId, uploadFilename, uploadContent)))
         log.debug(`File uploaded`, res)
 
         client.invalidateExercise(exercise.assignedExerciseId)
