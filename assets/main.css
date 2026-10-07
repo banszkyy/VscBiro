@@ -325,3 +325,11 @@ h2 {
     cursor: pointer;
     user-select: none;
 }
+
+.difficulty-filled {
+    color: var(--vscode-textLink-activeForeground);
+}
+
+.difficulty-empty {
+    color: var(--vscode-disabledForeground)
+}

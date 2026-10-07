@@ -337,8 +337,16 @@ export default class ExerciseView {
             })()}
                 <div class="debug">
                     <!--<b>${vscode.l10n.t('Type')}:</b> ${vscode.l10n.t(exercise.type)} <br>-->
-                    <b>${vscode.l10n.t('Difficulty')}:</b> ${"⭐".repeat(Math.round(Math.max(1, Math.min(10, exercise.difficultyLevel))))} <br>
-                    <b>${vscode.l10n.t('Expected file format')}:</b> ${exercise.expectedFileFormat} <br>
+                    <b>${vscode.l10n.t('Difficulty')}:</b> ${(() => {
+                        const min = 1
+                        const max = 5
+                        const w = Math.round(Math.max(min, Math.min(max, exercise.difficultyLevel)))
+                        return "<span class=\"difficulty-filled\">" + "★".repeat(w) + "</span><span class=\"difficulty-empty\">" + "★".repeat(max - w) + "</span>"
+                    })()} <br>
+                    ${exercise.expectedFileFormat ? `<b>${vscode.l10n.t('Expected file format')}:</b> ${exercise.expectedFileFormat} <br>` : ''}
+                    ${exercise.expectedFileNames ? `<b>${vscode.l10n.t('Expected filenames')}:</b> ${exercise.expectedFileNames} <br>` : ''}
+                    ${exercise.onlyAllowExpectedFilenames ? `<b>${vscode.l10n.t('Only allow expected filenames')}:</b> ${exercise.onlyAllowExpectedFilenames} <br>` : ''}
+                    ${exercise.tags?.length ? `<b>${vscode.l10n.t('Tags')}:</b> ${exercise.tags.join(', ')} <br>` : ''}
                 </div>
 				<div class="description">
 					${marked.parse(compiledDescription, { async: false })}
