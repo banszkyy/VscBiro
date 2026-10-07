@@ -2,11 +2,9 @@
 
 ## Bejelentkezés
 
-A bal oldali sávon nyisd meg a feladat-böngészőt (az ikonja ugyan az, mint a Bíró 3-nak).
-
-Ott lesz egy "Login" gomb, arra nyomj rá.
-
-Meg fog jelenni beviteli mező a h-s azonosítódhoz és jelszavadhoz.
+1. A bal oldali sávon nyisd meg a feladat-böngészőt (az ikonja ugyan az, mint a Bíró 3-nak).
+2. Ott lesz egy "Login" gomb, arra nyomj rá.
+3. Meg fog jelenni beviteli mező a h-s azonosítódhoz és jelszavadhoz.
 
 Ha nem jelenik meg a "Login" gomb, futtasd a `vscbiro3.login` parancsot:
 
@@ -16,21 +14,22 @@ Ha nem jelenik meg a "Login" gomb, futtasd a `vscbiro3.login` parancsot:
 
 ## Feladat kiválasztása
 
-A feladat-böngészőben keresd meg és válaszd ki a megfelelő feladatot.
+1. A feladat-böngészőben keresd meg és válaszd ki a megfelelő feladatot.
 
-Miután kiválasztottad, meg fog jelenni a feladatleírás.
+2. Miután kiválasztottad, meg fog jelenni a feladatleírás.
 
 > 💡 Az alsó sávon is ki van írva a kiválasztott feladat neve
 
 ## Feladat feltöltése
 
-Ha megnyitsz egy fájlt, a jobb felső sarokban van egy Feltöltés gomb. Arra rákattintva feltöltheted a megnyitott fájlt a kiválasztott feladathoz.
+- Ha megnyitsz egy fájlt, a jobb felső sarokban van egy Feltöltés gomb. Arra rákattintva feltöltheted a megnyitott fájlt a kiválasztott feladathoz.
 
-A feladat leírás vége fele van egy fájl feltöltés gomb. Arra rányomva kiválaszthatod a fájlt amit fel akarsz tölteni.
+vagy
+
+- A feladat leírás vége fele van egy fájl feltöltés gomb. Arra rányomva is kiválaszthatod a fájlt amit fel akarsz tölteni.
 
 ## Valami nem működik?
 
-Futtasd a `vscbiro3.feedback` parancsot VSCode-ban, amely megnyitja a visszajelzés űrlapot. Azt kérlek töltsd ki és küld el.
-Vagy írj nekem Discordon, nyiss egy GitHub issuet, írj e-mailt, keress meg Coospacen.
-
-Amíg nem javítom a hibát, használd a Bíró weboldalát.
+1. Futtasd a `vscbiro3.feedback` parancsot VSCode-ban, amely megnyitja a visszajelzés űrlapot.  
+2. Ezt kérlek töltsd ki és küld el. (vagy írj nekem Discordon, nyiss egy GitHub issuet, írj e-mailt, keress meg Coospacen)
+3. Amíg nem javítom a hibát, használd a Bíró weboldalát.
